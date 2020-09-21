@@ -1,0 +1,20 @@
+<div id="alert" role="alert"></div>
+<div class="container col-md-5 mt-5 px-4 pt-5 pb-1" style="box-shadow: 0 15px 25px rgba(0, 0, 0, 0.6)">
+	<h3 class="text-center mb-5">SIGN-UP FORM</h3>
+	<form id="form" action="/signup" method="POST">
+		<div class="form-group">
+			<input type="text" class="form-control" name="name" placeholder="Name" autofocus />
+		</div>
+		<div class="form-group">
+			<input type="email" class="form-control" name="email" placeholder="Email" />
+		</div>
+		<div class="form-group">
+			<input type="password" class="form-control" name="password" placeholder="Password" />
+		</div>
+		<div class="form-group">
+			<input type="password" class="form-control" name="password2" placeholder="Password Confirmation" />
+		</div>
+		<button id="btn" type="submit" class="btn btn-primary btn-block btn-lg">Submit</button>
+		<p class="text-center mt-3">Have an account? <a href="/login">Login</a></p>
+	</form>
+</div>
