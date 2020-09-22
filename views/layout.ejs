@@ -4,7 +4,7 @@
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous" />
-		<title><%= title %></title>
+		<title>Welcome</title>
 	</head>
 	<body>
 		<!-- ========================================================== -->
@@ -49,13 +49,23 @@
 		<div class="container">
 			<!-- -------------------------------------------------------- -->
 			<!-- Errors -->
-			<% if (errors.length){ %> <% errors.forEach(err => { %>
-			<div class="alert alert-danger" role="alert"><%= err %></div>
+			<% if (errors.length > 0 ){ %> <% errors.forEach(err => { %>
+			<div class="alert alert-danger alert-dismissible fade show mt-2" role="alert">
+				<%= err %>
+				<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
 			<% }); %> <% } %>
 			<!-- -------------------------------------------------------- -->
 			<!-- Message -->
-			<% if (message.length){ %>
-			<div class="alert alert-success" role="alert"><%= message %></div>
+			<% if (message.length > 0){ %>
+			<div class="alert alert-success alert-dismissible fade show mt-2" role="alert">
+				<%= message %>
+				<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
 			<% } %>
 			<!-- -------------------------------------------------------- -->
 			<!-- Other pages comes here -->

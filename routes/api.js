@@ -17,32 +17,25 @@ router.get('/', (req, res) => {
 // USER LOGIN
 
 // Send login page
-router.get('/login', isLogin, (req, res) => {
-	res.render('pages/login', {
-		title: 'Login',
-		user: req.session.user,
-		errors: req.flash('errors'),
-		message: req.flash('message'),
-	});
+router.get('/login', isLogin, (req, res, next) => {
+	res.render('pages/login', { title: 'Login' });
 });
 
 // Request for login
-router.post('/login', (req, res) => {
+router.post('/login', (req, res, next) => {
 	// Check for empty fields
 	if (!req.body.email || !req.body.password) {
 		req.flash('errors', 'Empty fields not allowed');
 		return res.redirect('/login');
-		// return res.status(500).send('Empty fields not allowed');
 	}
 	// Find user
 	User.findOne({ email: req.body.email }, (err, user) => {
 		if (err) {
-			return res.status(500).send('Something went wrong!');
+			next(err);
 		}
 		if (!user) {
 			req.flash('errors', 'Incorrect email or password.');
 			return res.redirect('/login');
-			// return res.status(500).send('Incorrect email or password.');
 		} else {
 			// Compare passwords
 			bcrypt
@@ -58,7 +51,7 @@ router.post('/login', (req, res) => {
 							loginDate: new Date().toISOString(),
 						}).save();
 
-						// req.flash('message', 'You logged in successfully.');
+						req.flash('message', 'Welcome, you logged in successfully.');
 						// Sending the logged in user to his dashboard page
 						return res.redirect('/users/dashboard');
 					} else {
@@ -68,7 +61,7 @@ router.post('/login', (req, res) => {
 					}
 				})
 				.catch((err) => {
-					return res.status(500).send('Something went wrong!');
+					next(err);
 				});
 		}
 	});
@@ -79,58 +72,46 @@ router.post('/login', (req, res) => {
 
 // Send signup page
 router.get('/signup', isLogin, (req, res) => {
-	res.render('pages/signup.ejs', {
-		title: 'Signup',
-		user: req.session.user,
-		errors: req.flash('errors'),
-		message: req.flash('message'),
-	});
+	res.render('pages/signup.ejs', { title: 'Signup' });
 });
 
 // Signup process
-router.post('/signup', (req, res) => {
+router.post('/signup', (req, res, next) => {
 	// Check for empty fields
 	if (!req.body.name || !req.body.email || !req.body.password || !req.body.password2) {
 		req.flash('errors', 'Empty fields not allowed');
 		return res.redirect('/signup');
-		// return res.status(500).send('Empty fields not allowed');
 	}
 
 	// Check for restrictions
 	// Name
 	if (req.body.name.length < 3 || req.body.name.length > 30) {
 		req.flash('errors', 'First name length must be between 3 and 30 characters.');
-		return res.redirect('/signup');
-		// return res.status(500).send('First name length must be between 3 and 30 characters.');
 	}
 	// Email
 	const emailValidator = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 	if (!emailValidator.test(req.body.email)) {
 		req.flash('errors', 'Invalid Email.');
-		return res.redirect('/signup');
-		// return res.status(500).send('Invalid Email.');
 	}
 	// Password
 	if (req.body.password.length < 8 || req.body.password.length > 30) {
 		req.flash('errors', 'Password length must be between 8 and 30 characters.');
-		return res.redirect('/signup');
-		// return res.status(500).send('Password length must be between 8 and 30 characters.');
 	}
 	// Passwords Match
 	if (req.body.password !== req.body.password2) {
 		req.flash('errors', 'Passwords do not match.');
-		return res.redirect('/signup');
-		// return res.status(500).send('Passwords do not match.');
 	}
-
+	// Check for any errors
+	if (res.locals.errors.length > 0) {
+		return res.redirect('/signup');
+	}
 	// Check if the username or mobile number is already exists or not
 	User.findOne({ email: req.body.email }, (err, user) => {
 		if (err) {
-			return res.status(500).send('Some internal problem happened. Please try again.');
+			next(err);
 		} else if (user) {
 			req.flash('errors', 'This email is already registered. Please try another one.');
 			return res.redirect('/signup');
-			// return res.status(500).send('This email is already registered. Please try another one.');
 		} else {
 			bcrypt
 				.hash(req.body.password, 10)
@@ -144,15 +125,15 @@ router.post('/signup', (req, res) => {
 
 					newUser.save((err, user) => {
 						if (err) {
-							return res.status(500).send('Some internal problem happened. Please try again.');
+							next(err);
 						} else {
-							req.flash('message', 'New user created successfully.');
+							req.flash('message', 'Your account created successfully. You can login now.');
 							return res.redirect('/login');
 						}
 					});
 				})
 				.catch((err) => {
-					return res.status(500).send('Something went wrong!');
+					next(err);
 				});
 		}
 	});
