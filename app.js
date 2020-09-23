@@ -32,10 +32,10 @@ app.use(expressLayouts);
 app.set('view engine', 'ejs');
 
 // =====================================================
-app.use(express.static(path.join(__dirname, 'public')));
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(cookieParser());
 
 app.use(
@@ -43,29 +43,28 @@ app.use(
 		key: 'user_sid',
 		secret: process.env.SESSION_SECRET,
 		resave: false,
-		saveUninitialized: false,
+		saveUninitialized: true
 	})
 );
 
 app.use(flash());
 
 app.use((req, res, next) => {
+	res.locals.success_msg = req.flash('success_msg');
+	res.locals.error_msg = req.flash('error_msg');
 	res.locals.user = req.session.user;
-	res.locals.errors = req.flash('errors');
-	res.locals.message = req.flash('message');
+	
 	next();
 });
 
 // =====================================================
-// If no session provided clear cookie
+// If no session then clear user_id
 app.use((req, res, next) => {
-	if (req.cookies.user_sid && !req.session.user) {
+	if (req.cookies.user_id && !req.session.user) {
 		res.clearCookie('user_sid');
 	}
 	next();
 });
-
-// =====================================================
 
 // routes
 app.use('/', apiRouter);

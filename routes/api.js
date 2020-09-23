@@ -10,7 +10,8 @@ const LoginLog = require('../models/loginLog');
 router.use('/users', checkSession, usersRouter);
 
 router.get('/', (req, res) => {
-	return res.redirect('/login');
+	let tasks = ['Wash your hands with water and soap', 'Do not touch your face with your hand', 'Always wear mask whenever going out', 'Be careful its very dangerous'];
+	res.render('pages/index', { title: 'Welcome', tasks });
 });
 
 //==================================================================
@@ -23,48 +24,52 @@ router.get('/login', isLogin, (req, res, next) => {
 
 // Request for login
 router.post('/login', (req, res, next) => {
+
+	let { email, password } = req.body;
+	let errors = [];
 	// Check for empty fields
-	if (!req.body.email || !req.body.password) {
-		req.flash('errors', 'Empty fields not allowed');
-		return res.redirect('/login');
+	if (!email || !password) {
+		errors.push({msg: 'Empty fields are not allowed'})
 	}
-	// Find user
-	User.findOne({ email: req.body.email }, (err, user) => {
-		if (err) {
-			next(err);
-		}
-		if (!user) {
-			req.flash('errors', 'Incorrect email or password.');
-			return res.redirect('/login');
-		} else {
-			// Compare passwords
-			bcrypt
-				.compare(req.body.password, user.password)
-				.then((result) => {
-					if (result) {
-						// Assign the user info to its session
-						req.session.user = user;
+	if (errors.length > 0) {
+		return res.render('pages/login', {errors})
+	} else {
+		// Find user
+		User.findOne({ email }, (err, user) => {
+			if (err) {
+				next(err);
+			}
+			if (!user) {
+				req.flash('errors', 'Incorrect email or password.');
+				return res.redirect('/login');
+			} else {
+				// Compare passwords
+				bcrypt
+					.compare(password, user.password)
+					.then((result) => {
+						if (result) {
+							// Assign the user info to its session
+							req.session.user = user;
 
-						// Save login log
-						new LoginLog({
-							user: req.session.user._id,
-							loginDate: new Date().toISOString(),
-						}).save();
+							// Save login log
+							new LoginLog({
+								user: req.session.user._id,
+								loginDate: new Date().toISOString(),
+							}).save();
 
-						req.flash('message', 'Welcome, you logged in successfully.');
-						// Sending the logged in user to his dashboard page
-						return res.redirect('/users/dashboard');
-					} else {
-						req.flash('errors', 'Incorrect email or password.');
-						return res.redirect('/login');
-						// return res.status(500).send('Incorrect email or password.');
-					}
-				})
-				.catch((err) => {
-					next(err);
-				});
-		}
-	});
+							req.flash('success_msg', 'Welcome, you logged in successfully.');
+							return res.redirect('/users/dashboard');
+						} else {
+							req.flash('error_msg', 'Incorrect email or password.');
+							return res.redirect('/login');
+						}
+					})
+					.catch((err) => {
+						next(err);
+					});
+			}
+		});
+	}
 });
 
 // ==============================================================
@@ -72,71 +77,76 @@ router.post('/login', (req, res, next) => {
 
 // Send signup page
 router.get('/signup', isLogin, (req, res) => {
-	res.render('pages/signup.ejs', { title: 'Signup' });
+	res.render('pages/signup', { title: 'Signup' });
 });
 
 // Signup process
 router.post('/signup', (req, res, next) => {
+
+	let { name, email, password, password2 } = req.body;
+	let errors = [];
+
 	// Check for empty fields
-	if (!req.body.name || !req.body.email || !req.body.password || !req.body.password2) {
-		req.flash('errors', 'Empty fields not allowed');
-		return res.redirect('/signup');
+	if (!name || !email || !password || !password2) {
+		errors.push({msg: 'Empty fields are not allowed'});
+		return res.render('pages/signup', { title: 'Signup', errors, name, email })
 	}
 
 	// Check for restrictions
 	// Name
-	if (req.body.name.length < 3 || req.body.name.length > 30) {
-		req.flash('errors', 'First name length must be between 3 and 30 characters.');
+	if (name.length < 3 || name.length > 30) {
+		errors.push({msg: 'Name must be between 3 and 30 characters.'});
 	}
 	// Email
 	const emailValidator = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-	if (!emailValidator.test(req.body.email)) {
-		req.flash('errors', 'Invalid Email.');
+	if (!emailValidator.test(email)) {
+		errors.push({msg: 'Invalid Email.'});
 	}
 	// Password
-	if (req.body.password.length < 8 || req.body.password.length > 30) {
-		req.flash('errors', 'Password length must be between 8 and 30 characters.');
+	if (password.length < 6 || password.length > 30) {
+		errors.push({msg: 'Password must be between 6 and 30 characters.'});
 	}
 	// Passwords Match
-	if (req.body.password !== req.body.password2) {
-		req.flash('errors', 'Passwords do not match.');
+	if (password !== password2) {
+		errors.push({msg: 'Passwords do not match.'});
 	}
 	// Check for any errors
-	if (res.locals.errors.length > 0) {
-		return res.redirect('/signup');
-	}
+	if (errors.length > 0) {
+		return res.render('pages/signup', { errors, name, email });
+	} else {
 	// Check if the username or mobile number is already exists or not
-	User.findOne({ email: req.body.email }, (err, user) => {
-		if (err) {
-			next(err);
-		} else if (user) {
-			req.flash('errors', 'This email is already registered. Please try another one.');
-			return res.redirect('/signup');
-		} else {
-			bcrypt
-				.hash(req.body.password, 10)
-				.then((hash) => {
-					// Saving new user process
-					const newUser = new User({
-						name: req.body.name,
-						email: req.body.email,
-						password: hash,
-					});
+		User.findOne({ email }, (err, user) => {
+			if (err) {
+				next(err);
+			} else if (user) {
+				errors.push({ msg: 'Email already exists' });
+				return res.render('pages/signup', { errors, name, email });
+			} else {
+				bcrypt
+					.hash(password, 10)
+					.then((hash) => {
+						// Saving new user process
+						const newUser = new User({
+							name,
+							email,
+							password: hash,
+						});
 
-					newUser.save((err, user) => {
-						if (err) {
-							next(err);
-						} else {
-							req.flash('message', 'Your account created successfully. You can login now.');
-							return res.redirect('/login');
-						}
+						newUser.save((err, user) => {
+							if (err) {
+								next(err);
+							} else {
+								req.flash('success_msg', 'Your account is created and can log in');
+								return res.redirect('/login');
+							}
+						});
+					})
+					.catch((err) => {
+						next(err);
 					});
-				})
-				.catch((err) => {
-					next(err);
-				});
-		}
-	});
+			}
+		});
+	}
 });
 
 module.exports = router;
